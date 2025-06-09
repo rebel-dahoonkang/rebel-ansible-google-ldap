@@ -1,0 +1,25 @@
+[sssd]
+services = nss, pam, sudo
+domains = {{ ldap_domain }}
+config_file_version = 2
+
+[domain/{{ ldap_domain }}]
+id_provider = ldap
+auth_provider = ldap
+ldap_uri = {{ ldap_uri }}
+ldap_search_base = {{ ldap_users_base }}
+ldap_group_search_base = {{ ldap_groups_base }}
+ldap_tls_cert = {{ ldap_cert_path }}
+ldap_tls_key = {{ ldap_key_path }}
+ldap_tls_reqcert = demand
+ldap_schema = rfc2307bis
+ldap_user_uuid = entryUUID
+override_homedir = /home/%u
+auto_private_groups = true
+enumerate = false
+cache_credentials = true
+entry_cache_timeout = 3600
+ignore_group_members = true
+
+[pam]
+offline_credentials_expiration = 2

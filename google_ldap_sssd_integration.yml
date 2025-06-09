@@ -1,0 +1,27 @@
+- name: Configure Linux server for Google Secure LDAP (SSSD) integration
+  hosts: your_ubuntu_servers # 인벤토리 파일에 정의된 호스트 그룹
+  become: yes                # 루트 권한으로 실행 (sudo)
+
+  vars:
+    # Google Secure LDAP 설정 (노션 페이지 참고)
+    ldap_domain: "rebellions.ai"
+    ldap_uri: "ldaps://ldap.google.com"
+    ldap_users_base: "ou=users,dc=rebellions,dc=ai"
+    ldap_groups_base: "ou=groups,dc=rebellions,dc=ai"
+
+    # Google LDAP 인증서 및 키 파일 경로 (대상 서버 기준 경로)
+    ldap_cert_path: "/var/Google_2027_12_17_20121.crt"
+    ldap_key_path: "/var/Google_2027_12_17_20121.key"
+
+    # Sudo 그룹 이름 (노션 페이지 참고)
+    sudo_group_name: "ssw"
+
+  tasks:
+    # 여기에 Ansible 태스크들을 하나씩 추가할 것입니다.
+
+  handlers:
+    - name: Restart sssd
+      systemd:
+        name: sssd
+        state: restarted
+        enabled: yes
