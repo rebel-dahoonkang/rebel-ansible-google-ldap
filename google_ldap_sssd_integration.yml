@@ -1,27 +1,103 @@
+---
 - name: Configure Linux server for Google Secure LDAP (SSSD) integration
-  hosts: your_ubuntu_servers # 인벤토리 파일에 정의된 호스트 그룹
-  become: yes                # 루트 권한으로 실행 (sudo)
+  hosts: your_ubuntu_servers # inventory.ini에 정의된 호스트 그룹
+  become: true                # 루트 권한으로 실행 (sudo)
 
   vars:
-    # Google Secure LDAP 설정 (노션 페이지 참고)
+    # Google Secure LDAP 설정
     ldap_domain: "rebellions.ai"
     ldap_uri: "ldaps://ldap.google.com"
     ldap_users_base: "ou=users,dc=rebellions,dc=ai"
     ldap_groups_base: "ou=groups,dc=rebellions,dc=ai"
 
-    # Google LDAP 인증서 및 키 파일 경로 (대상 서버 기준 경로)
+    # Google LDAP 인증서 및 키 파일 경로
     ldap_cert_path: "/var/Google_2027_12_17_20121.crt"
     ldap_key_path: "/var/Google_2027_12_17_20121.key"
 
-    # Sudo 그룹 이름 (노션 페이지 참고)
     sudo_group_name: "ssw"
 
   tasks:
-    # 여기에 Ansible 태스크들을 하나씩 추가할 것입니다.
+    - name: Ensure necessary packages are installed
+      ansible.builtin.apt:
+        name:
+          - sssd
+          - libpam-sss
+          - libnss-sss
+          # - sssd-tools
+          # - ldap-utils
+        state: present
+        update_cache: true
+
+    - name: Copy Google LDAP client certificate
+      ansible.builtin.copy:
+        src: "files/ldap/Google_2027_12_17_20121.crt"
+        dest: "{{ ldap_cert_path }}"
+        mode: '0644'
+        owner: root
+        group: root
+
+    - name: Copy Google LDAP client key
+      ansible.builtin.copy:
+        src: "files/ldap/Google_2027_12_17_20121.key"
+        dest: "{{ ldap_key_path }}"
+        mode: '0600'
+        owner: root
+        group: root
+
+    - name: Configure sssd.conf using template
+      ansible.builtin.template:
+        src: sssd.conf.j2
+        dest: /etc/sssd/sssd.conf
+        mode: '0600'
+        owner: root
+        group: root
+      notify: Restart sssd
+
+    - name: Update nsswitch.conf to use sssd for passwd, group, and shadow
+      ansible.builtin.lineinfile:
+        path: /etc/nsswitch.conf
+        regexp: "^(passwd|group|shadow):\\s*.*"
+        line: "\\1:         sss files systemd"
+        backrefs: true
+        state: present
+      notify: Restart sssd
+
+    - name: Ensure PubkeyAuthentication is enabled in sshd_config
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PubkeyAuthentication' # 주석 처리된 라인도 찾을 수 있도록 #? 추가
+        line: 'PubkeyAuthentication yes' # 주석 제거 및 yes로 설정
+        state: present
+        validate: 'sshd -t -f %s' # sshd 설정 파일 문법 검증
+      notify: Restart sshd # sshd_config 변경 시 ssh 서비스 재시작
+
+    - name: Enable automatic home directory creation in common-session
+      ansible.builtin.blockinfile:
+        path: /etc/pam.d/common-session
+        block: |
+          session optional pam_mkhomedir.so skel=/etc/skel/ umask=0022
+        marker: "# {mark} ANSIBLE MANAGED BLOCK for pam_mkhomedir"
+        state: present
+
+    - name: Configure sudoers for ssw group
+      ansible.builtin.lineinfile:
+        path: "/etc/sudoers.d/90-ldap-ssw-sudo"
+        line: "%{{ sudo_group_name }} ALL=(ALL:ALL) NOPASSWD: ALL"
+        create: true
+        mode: '0440'
+        owner: root
+        group: root
+        validate: 'visudo -cf %s'
 
   handlers:
     - name: Restart sssd
-      systemd:
+      ansible.builtin.systemd:
         name: sssd
         state: restarted
-        enabled: yes
+        enabled: true
+
+    - name: Restart sshd
+      ansible.builtin.systemd:
+        name: sshd
+        state: restarted
+        enabled: true
