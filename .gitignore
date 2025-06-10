@@ -1,2 +1,3 @@
 files/ldap/*.crt
 files/ldap/*.key
+.vscode
