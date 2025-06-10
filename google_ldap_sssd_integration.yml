@@ -80,14 +80,35 @@
         group: root
         validate: 'visudo -cf %s'
 
-    - name: (Security) Remove the initial bootstrap key from authorized_keys  # 테스트용 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-      ansible.builtin.file:
-        path: "/home/ubuntu/.ssh/authorized_keys"
-        state: absent
+    - name: Ensure our sshd settings are enforced last
+      ansible.builtin.blockinfile:
+        path: /etc/ssh/sshd_config.d/99-ansible.conf
+        create: true
+        mode: '0600'
+        owner: root
+        group: root
+        block: |
+          # Settings enforced by Ansible
+          PasswordAuthentication yes
+          ChallengeResponseAuthentication yes
+        validate: 'sshd -t -f %s'
+      notify: Restart sshd
+
+    # 실제 운영 서버에서는 추가
+    # - name: (Security) Remove the initial bootstrap key from authorized_keys
+    #   ansible.builtin.file:
+    #     path: "/home/ubuntu/.ssh/authorized_keys"
+    #     state: absent
 
   handlers:
     - name: Restart sssd
       ansible.builtin.systemd:
         name: sssd
+        state: restarted
+        enabled: true
+
+    - name: Restart sshd
+      ansible.builtin.service:
+        name: "{{ 'ssh' if ansible_os_family == 'Debian' else 'sshd' }}"
         state: restarted
         enabled: true
