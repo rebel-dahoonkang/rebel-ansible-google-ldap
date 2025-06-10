@@ -62,15 +62,6 @@
         state: present
       notify: Restart sssd
 
-    - name: Ensure PubkeyAuthentication is enabled in sshd_config
-      ansible.builtin.lineinfile:
-        path: /etc/ssh/sshd_config
-        regexp: '^#?PubkeyAuthentication' # 주석 처리된 라인도 찾을 수 있도록 #? 추가
-        line: 'PubkeyAuthentication yes' # 주석 제거 및 yes로 설정
-        state: present
-        validate: 'sshd -t -f %s' # sshd 설정 파일 문법 검증
-      notify: Restart sshd # sshd_config 변경 시 ssh 서비스 재시작
-
     - name: Enable automatic home directory creation in common-session
       ansible.builtin.blockinfile:
         path: /etc/pam.d/common-session
@@ -89,15 +80,14 @@
         group: root
         validate: 'visudo -cf %s'
 
+    - name: (Security) Remove the initial bootstrap key from authorized_keys  # 테스트용 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+      ansible.builtin.file:
+        path: "/home/ubuntu/.ssh/authorized_keys"
+        state: absent
+
   handlers:
     - name: Restart sssd
       ansible.builtin.systemd:
         name: sssd
-        state: restarted
-        enabled: true
-
-    - name: Restart sshd
-      ansible.builtin.systemd:
-        name: sshd
         state: restarted
         enabled: true
