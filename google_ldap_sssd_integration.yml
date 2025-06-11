@@ -94,11 +94,26 @@
         validate: 'sshd -t -f %s'
       notify: Restart sshd
 
-    # 실제 운영 서버에서는 추가
-    # - name: (Security) Remove the initial bootstrap key from authorized_keys
-    #   ansible.builtin.file:
-    #     path: "/home/ubuntu/.ssh/authorized_keys"
-    #     state: absent
+    - name: Disable DNS lookup for faster login
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?UseDNS'
+        line: 'UseDNS no'
+        validate: 'sshd -t -f %s'
+      notify: Restart sshd
+
+    - name: Disable GSSAPI authentication for faster login
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?GSSAPIAuthentication'
+        line: 'GSSAPIAuthentication no'
+        validate: 'sshd -t -f %s'
+      notify: Restart sshd
+
+    - name: (Security) Remove the initial bootstrap key from authorized_keys
+      ansible.builtin.file:
+        path: "/home/ubuntu/.ssh/authorized_keys"
+        state: absent
 
   handlers:
     - name: Restart sssd
