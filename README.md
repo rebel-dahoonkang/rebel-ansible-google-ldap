@@ -1,3 +1,6 @@
+## Linux 서버 계정 Google LDAP로 통합
+
+
 ```jsx
 ansible_google_ldap/                 # 프로젝트 최상위 디렉토리
 ├── inventory.ini                    # 작업대상 서버의 정보
