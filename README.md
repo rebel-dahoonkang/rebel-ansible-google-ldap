@@ -1,4 +1,4 @@
-## Linux 서버 계정 Google LDAP로 통합
+# Linux 서버 계정 Google LDAP로 통합
 
 
 ```jsx
