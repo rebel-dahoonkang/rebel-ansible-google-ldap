@@ -11,7 +11,7 @@ ansible_google_ldap/                 # 프로젝트 최상위 디렉토리
 │   └── Google_2027_12_17_20121.crt
 │   └── Google_2027_12_17_20121.key 
 └── templates/                       
-		└── sssd.conf.j2                 # 노션의 /etc/sssd/sssd.conf 내용을 담을 템플릿
+    └── sssd.conf.j2                 # 노션의 /etc/sssd/sssd.conf 내용을 담을 템플릿
 ```
 
 ---
