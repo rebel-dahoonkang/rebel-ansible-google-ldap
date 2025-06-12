@@ -96,3 +96,4 @@ ansible-playbook -i inventory.ini google_ldap_sssd_integration.yml
     - UseDNS no
     - GSSAPIAuthentication no
 8. publicKey(`ubuntu`) 삭제 (적용할 서버 설정 확인 필요함)
+9. 로그인 속도 약 4초
