@@ -110,10 +110,10 @@
         validate: 'sshd -t -f %s'
       notify: Restart sshd
 
-    - name: (Security) Remove the initial bootstrap key from authorized_keys
-      ansible.builtin.file:
-        path: "/home/ubuntu/.ssh/authorized_keys"
-        state: absent
+    # - name: (Security) Remove the initial bootstrap key from authorized_keys
+    #   ansible.builtin.file:
+    #     path: "/home/ubuntu/.ssh/authorized_keys"
+    #     state: absent
 
   handlers:
     - name: Restart sssd
