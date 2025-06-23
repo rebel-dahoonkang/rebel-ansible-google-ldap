@@ -1,3 +1,4 @@
 files/ldap/*.crt
 files/ldap/*.key
 .vscode
+inventory.ini
