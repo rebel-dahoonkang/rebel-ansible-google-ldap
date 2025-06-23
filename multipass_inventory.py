@@ -1,4 +1,4 @@
-# multipaas test용입니다
+# multipaas test
 
 #!/usr/bin/env python3
 import json

@@ -23,7 +23,7 @@
           - sssd
           - libpam-sss
           - libnss-sss
-          # - sssd-tools
+          - sssd-tools
           # - ldap-utils
         state: present
         update_cache: true
@@ -57,7 +57,7 @@
       ansible.builtin.lineinfile:
         path: /etc/nsswitch.conf
         regexp: "^(passwd|group|shadow):\\s*.*"
-        line: "\\1:         sss files systemd"
+        line: "\\1:         files sss systemd"
         backrefs: true
         state: present
       notify: Restart sssd
@@ -94,6 +94,8 @@
         validate: 'sshd -t -f %s'
       notify: Restart sshd
 
+    #### Login Optimizing ####
+
     - name: Disable DNS lookup for faster login
       ansible.builtin.lineinfile:
         path: /etc/ssh/sshd_config
@@ -110,6 +112,30 @@
         validate: 'sshd -t -f %s'
       notify: Restart sshd
 
+    - name: Disable ldap_use_tokengroups in sssd.conf
+      ansible.builtin.lineinfile:
+        path: /etc/sssd/sssd.conf
+        regexp: '^ldap_use_tokengroups\s*='
+        line: 'ldap_use_tokengroups = False'
+        mode: '0600'
+      notify: Restart sssd
+
+    - name: Set offline_credentials_expiration in sssd.conf
+      ansible.builtin.lineinfile:
+        path: /etc/sssd/sssd.conf
+        regexp: '^offline_credentials_expiration\s*='
+        line: 'offline_credentials_expiration = 7'
+        mode: '0600'
+      notify: Restart sssd
+
+    - name: Set ldap_entry_cache_timeout in sssd.conf
+      ansible.builtin.lineinfile:
+        path: /etc/sssd/sssd.conf
+        regexp: '^ldap_entry_cache_timeout\s*='
+        line: 'ldap_entry_cache_timeout = 86400'
+        mode: '0600'
+      notify: Restart sssd
+
     # - name: (Security) Remove the initial bootstrap key from authorized_keys
     #   ansible.builtin.file:
     #     path: "/home/ubuntu/.ssh/authorized_keys"
@@ -121,6 +147,12 @@
         name: sssd
         state: restarted
         enabled: true
+      notify: Clear sssd cache
+
+    - name: Clear sssd cache
+      ansible.builtin.command:
+        cmd: sss_cache -E
+      changed_when: false
 
     - name: Restart sshd
       ansible.builtin.service:
